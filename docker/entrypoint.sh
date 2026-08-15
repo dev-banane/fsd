@@ -16,7 +16,55 @@ copy_if_missing() {
 copy_if_missing "${TEMPLATE_DIR}/fsd.conf" "$CONFIG"
 copy_if_missing "${TEMPLATE_DIR}/motd.txt" "${DATA_DIR}/motd.txt"
 copy_if_missing "${TEMPLATE_DIR}/help.txt" "${DATA_DIR}/help.txt"
-[ -f "${DATA_DIR}/cert.txt" ] || : > "${DATA_DIR}/cert.txt"
+
+write_certs() {
+  dest=$1
+  certs=$2
+  tmp="${dest}.tmp"
+  : > "$tmp"
+  rest=$certs
+  while [ -n "$rest" ]; do
+    case "$rest" in
+      *,*)
+        entry=${rest%%,*}
+        rest=${rest#*,}
+        ;;
+      *)
+        entry=$rest
+        rest=
+        ;;
+    esac
+    [ -n "$entry" ] || continue
+    cid=${entry%%:*}
+    remainder=${entry#*:}
+    if [ "$cid" = "$entry" ] || [ -z "$remainder" ]; then
+      echo "FSD_CERTS entry '$entry' must be cid:password or cid:password:level" >&2
+      exit 1
+    fi
+    case "$remainder" in
+      *:*)
+        password=${remainder%%:*}
+        level=${remainder#*:}
+        ;;
+      *)
+        password=$remainder
+        level=12
+        ;;
+    esac
+    if [ -z "$cid" ] || [ -z "$password" ] || [ -z "$level" ]; then
+      echo "FSD_CERTS entry '$entry' must be cid:password or cid:password:level" >&2
+      exit 1
+    fi
+    printf '%s %s %s\n' "$cid" "$password" "$level" >> "$tmp"
+  done
+  mv "$tmp" "$dest"
+}
+
+if [ -n "${FSD_CERTS:-}" ]; then
+  write_certs "${DATA_DIR}/cert.txt" "$FSD_CERTS"
+else
+  [ -f "${DATA_DIR}/cert.txt" ] || : > "${DATA_DIR}/cert.txt"
+fi
 
 set_conf() {
   key=$1

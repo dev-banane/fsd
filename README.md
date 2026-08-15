@@ -59,10 +59,54 @@ Runtime settings can be injected with environment variables:
 | `FSD_LOCATION` | `location` | `Nowhere` |
 | `FSD_MAXCLIENTS` | `maxclients` | `200` |
 | `FSD_WEATHER_SOURCE` | `source` | `file` |
+| `FSD_CERTS` | `cert.txt` | *(unset — keep existing file)* |
 | `TZ` | — | `UTC` |
 
 Change `FSD_PASSWORD` before exposing the system port. Set `FSD_HOSTNAME` to
 the public hostname or IP that clients should use.
+
+`FSD_CERTS` writes `/data/cert.txt` at startup. The native file format is
+whitespace-separated `cid password level`, where `level` is a number (`12` =
+administrator). The environment variable uses:
+
+```text
+FSD_CERTS=100000:MyPassword
+FSD_CERTS=100000:password1,100001:password2
+FSD_CERTS=100000:MyPassword:12
+```
+
+Level defaults to `12` when omitted. If `FSD_CERTS` is unset, an existing
+`/data/cert.txt` is left unchanged. CID and password must not contain spaces,
+commas, or colons.
+
+### Certificate levels
+
+The number in `cert.txt` is the FSD/VATSIM **controller rating**. EuroScope
+sends the rating from its Connect dialog; FSD rejects the login with
+"Requested level too high" if that rating is above the certificate.
+
+VATSIM still uses these IDs. `C2` and `I2` exist in FSD but are unused on
+the live network. This is **not** the separate VATSIM pilot rating
+(PPL/IR/ATPL).
+
+| Level | FSD name | VATSIM | Typical meaning |
+| --- | --- | --- | --- |
+| 0 | SUSPENDED | SUS | Account suspended |
+| 1 | OBSPILOT | OBS | Observe only |
+| 2 | STUDENT1 | S1 | Delivery / ground |
+| 3 | STUDENT2 | S2 | Tower |
+| 4 | STUDENT3 | S3 | Approach / departure |
+| 5 | CONTROLLER1 | C1 | Enroute / center |
+| 6 | CONTROLLER2 | C2 | Unused on VATSIM |
+| 7 | CONTROLLER3 | C3 | Senior controller |
+| 8 | INSTRUCTOR1 | I1 | Instructor |
+| 9 | INSTRUCTOR2 | I2 | Unused on VATSIM |
+| 10 | INSTRUCTOR3 | I3 | Senior instructor |
+| 11 | SUPERVISOR | SUP | Network supervisor |
+| 12 | ADMINISTRATOR | ADM | Administrator |
+
+For a private EuroScope server, `12` is the practical default: any rating
+in the Connect dialog will be accepted.
 
 The compose file publishes `6809/tcp`. Optionally also publish `3010/tcp` for
 the telnet system console (`pwd <password>` then `help`).
