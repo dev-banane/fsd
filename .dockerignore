@@ -1,0 +1,13 @@
+.git
+.gitignore
+**/*.o
+**/*.obj
+**/*.exe
+windows
+docs
+README.md
+README.original.txt
+README_FSFDT.txt
+CREDITS.txt
+.gitattributes
+docker-compose.yml

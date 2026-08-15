@@ -36,4 +36,34 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR 
 PERFORMANCE OF THIS SOFTWARE.
 
+## Docker
+
+FSD is a raw TCP service. Clients connect to **TCP 6809**.
+
+```sh
+docker compose up --build
+```
+
+Persistent data (`fsd.conf`, `cert.txt`, `motd.txt`, logs, METAR) is stored in
+`/data`.
+
+Runtime settings can be injected with environment variables:
+
+| Variable | Config key | Default |
+| --- | --- | --- |
+| `FSD_IDENT` | `ident` | `FSD` |
+| `FSD_HOSTNAME` | `hostname` | `localhost` |
+| `FSD_PASSWORD` | `password` | `disable` |
+| `FSD_EMAIL` | `email` | `nobody@nowhere.com` |
+| `FSD_NAME` | `name` | `FSD Docker` |
+| `FSD_LOCATION` | `location` | `Nowhere` |
+| `FSD_MAXCLIENTS` | `maxclients` | `200` |
+| `FSD_WEATHER_SOURCE` | `source` | `file` |
+| `TZ` | — | `UTC` |
+
+Change `FSD_PASSWORD` before exposing the system port. Set `FSD_HOSTNAME` to
+the public hostname or IP that clients should use.
+
+The compose file publishes `6809/tcp`. Optionally also publish `3010/tcp` for
+the telnet system console (`pwd <password>` then `help`).
 

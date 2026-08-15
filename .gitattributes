@@ -1,0 +1,6 @@
+docker/*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+docker/fsd.conf text eol=lf
+unix/** text eol=lf
+*.yml text eol=lf
+Dockerfile text eol=lf

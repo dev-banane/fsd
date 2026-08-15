@@ -18,12 +18,21 @@ void run(char *configfile)
    fsd fsdserver(configfile);
    while (1) fsdserver.run();
 }
+#ifndef WIN32
+static void handle_exit(int)
+{
+   _exit(0);
+}
+#endif
+
 void dosignals()
 {
    starttimer();
 #ifndef WIN32
    signal(SIGPIPE, SIG_IGN);
    signal(SIGHUP, SIG_IGN);
+   signal(SIGTERM, handle_exit);
+   signal(SIGINT, handle_exit);
 #endif
 }
 

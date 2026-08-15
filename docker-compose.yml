@@ -1,0 +1,24 @@
+services:
+  fsd:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      FSD_IDENT: ${FSD_IDENT:-FSD}
+      FSD_EMAIL: ${FSD_EMAIL:-nobody@nowhere.com}
+      FSD_NAME: ${FSD_NAME:-FSD Docker}
+      FSD_HOSTNAME: ${FSD_HOSTNAME:-localhost}
+      FSD_PASSWORD: ${FSD_PASSWORD:-disable}
+      FSD_LOCATION: ${FSD_LOCATION:-Nowhere}
+      FSD_CLIENTPORT: "6809"
+      FSD_MAXCLIENTS: ${FSD_MAXCLIENTS:-200}
+    ports:
+      - "6809:6809/tcp"
+    volumes:
+      - fsd-data:/data
+    stop_grace_period: 10s
+
+volumes:
+  fsd-data:

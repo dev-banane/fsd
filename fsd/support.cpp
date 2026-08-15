@@ -52,12 +52,10 @@ void dolog(int level, const char *string, ...)
    char buf[1000], buf2[1200];
    long secs=time(NULL);
    struct tm *loctime;
-   static int firsttime=1;
    FILE *logfile=fopen(LOGFILE,"a");
    char *sident=(char *)(myserver?myserver->ident:"");
    va_list ap;
 
-   if (!logfile) return;
    loctime = localtime(&secs);
    va_start(ap,string);
    vsprintf(buf,string,ap);
@@ -67,8 +65,13 @@ void dolog(int level, const char *string, ...)
       loctime->tm_mday, loctime->tm_mon+1, loctime->tm_year,
       loctime->tm_hour,loctime->tm_min,loctime->tm_sec, sident,
       (level<L_WARNING)?"** ":"", buf);
-   fprintf(logfile,"%s\n", buf2);
-   fclose(logfile);
+   if (logfile)
+   {
+      fprintf(logfile,"%s\n", buf2);
+      fclose(logfile);
+   }
+   fprintf(stderr,"%s\n", buf2);
+   fflush(stderr);
    addlog(level, buf2);
 }
 /* Breaks a packet into pieces, s is the packet, **a is the array

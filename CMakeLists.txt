@@ -49,3 +49,10 @@ add_executable(fsd
         fsd/wprofile.h)
 set_property(TARGET fsd PROPERTY CXX_STANDARD 14)
 set_property(TARGET fsd PROPERTY CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(fsd PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-write-strings>
+        -Wno-unused-result)
+endif()
