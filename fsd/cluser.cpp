@@ -95,11 +95,14 @@ void cluser::readmotd()
 {
    FILE *io=fopen(PATH_FSD_MOTD,"r");
    char line[1000];
- 	sprintf(line, "%s", PRODUCT);
-	clientinterface->sendgeneric(thisclient->callsign, thisclient, NULL,
-	  NULL, "server", line, CL_MESSAGE);
-  if (!io) return;
-  while (fgets(line,1000,io))
+   if (!io)
+   {
+      sprintf(line, "%s", PRODUCT);
+      clientinterface->sendgeneric(thisclient->callsign, thisclient, NULL,
+         NULL, "server", line, CL_MESSAGE);
+      return;
+   }
+   while (fgets(line,1000,io))
    {
       line[strlen(line)-1]='\0';
       clientinterface->sendgeneric(thisclient->callsign, thisclient, NULL,

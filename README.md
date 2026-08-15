@@ -87,8 +87,7 @@ connect. Use `\n` for line breaks:
 FSD_MOTD=Welcome to my FSD server.\nEnjoy.
 ```
 
-If `FSD_MOTD` is unset, an existing `/data/motd.txt` is left unchanged. FSD
-always prefixes a hardcoded version line before this file.
+If `FSD_MOTD` is unset, an existing `/data/motd.txt` is left unchanged.
 
 ### Certificate levels
 
