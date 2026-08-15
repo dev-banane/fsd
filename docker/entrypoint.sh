@@ -14,8 +14,13 @@ copy_if_missing() {
 }
 
 copy_if_missing "${TEMPLATE_DIR}/fsd.conf" "$CONFIG"
-copy_if_missing "${TEMPLATE_DIR}/motd.txt" "${DATA_DIR}/motd.txt"
 copy_if_missing "${TEMPLATE_DIR}/help.txt" "${DATA_DIR}/help.txt"
+
+if [ -n "${FSD_MOTD:-}" ]; then
+  printf '%b\n' "$FSD_MOTD" > "${DATA_DIR}/motd.txt"
+else
+  copy_if_missing "${TEMPLATE_DIR}/motd.txt" "${DATA_DIR}/motd.txt"
+fi
 
 write_certs() {
   dest=$1

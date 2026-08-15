@@ -15,6 +15,7 @@ services:
       FSD_CLIENTPORT: "6809"
       FSD_MAXCLIENTS: ${FSD_MAXCLIENTS:-200}
       FSD_CERTS: ${FSD_CERTS:-}
+      FSD_MOTD: ${FSD_MOTD:-}
     ports:
       - "6809:6809/tcp"
     volumes:

@@ -60,6 +60,7 @@ Runtime settings can be injected with environment variables:
 | `FSD_MAXCLIENTS` | `maxclients` | `200` |
 | `FSD_WEATHER_SOURCE` | `source` | `file` |
 | `FSD_CERTS` | `cert.txt` | *(unset — keep existing file)* |
+| `FSD_MOTD` | `motd.txt` | *(unset — keep existing file)* |
 | `TZ` | — | `UTC` |
 
 Change `FSD_PASSWORD` before exposing the system port. Set `FSD_HOSTNAME` to
@@ -78,6 +79,16 @@ FSD_CERTS=100000:MyPassword:12
 Level defaults to `12` when omitted. If `FSD_CERTS` is unset, an existing
 `/data/cert.txt` is left unchanged. CID and password must not contain spaces,
 commas, or colons.
+
+`FSD_MOTD` writes `/data/motd.txt`, the welcome text EuroScope shows after
+connect. Use `\n` for line breaks:
+
+```text
+FSD_MOTD=Welcome to my FSD server.\nEnjoy.
+```
+
+If `FSD_MOTD` is unset, an existing `/data/motd.txt` is left unchanged. FSD
+always prefixes a hardcoded version line before this file.
 
 ### Certificate levels
 
