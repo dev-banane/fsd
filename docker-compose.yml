@@ -16,11 +16,31 @@ services:
       FSD_MAXCLIENTS: ${FSD_MAXCLIENTS:-200}
       FSD_CERTS: ${FSD_CERTS:-}
       FSD_MOTD: ${FSD_MOTD:-}
+      FSD_WHAZZUP_INTERVAL: ${FSD_WHAZZUP_INTERVAL:-5}
     ports:
       - "6809:6809/tcp"
     volumes:
       - fsd-data:/data
     stop_grace_period: 10s
+
+  webeye:
+    build:
+      context: ./webeye
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - fsd
+    environment:
+      TZ: ${TZ:-UTC}
+      WEBEYE_WHAZZUP: /data/whazzup.txt
+      WEBEYE_POLL: ${WEBEYE_POLL:-5}
+      WEBEYE_HISTORY_POINTS: ${WEBEYE_HISTORY_POINTS:-60}
+      WEBEYE_HISTORY_TTL: ${WEBEYE_HISTORY_TTL:-600}
+      WEBEYE_VATGLASSES: ${WEBEYE_VATGLASSES:-}
+    ports:
+      - "${WEBEYE_PORT:-8080}:8080/tcp"
+    volumes:
+      - fsd-data:/data:ro
 
 volumes:
   fsd-data:

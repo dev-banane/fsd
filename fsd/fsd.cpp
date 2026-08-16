@@ -26,12 +26,13 @@ fsd::fsd(char *configfile)
 {
    certfile=NULL;
    whazzupfile=NULL;
+   whazzupinterval=WHAZZUPCHECK;
    dolog(L_INFO,"Booting server");
    pmanager=new pman;
 
    /* Start the information manager */
    manager=new manage();
-   
+
    configman=new configmanager(configfile);
    pmanager->registerprocess(configman);
 
@@ -80,7 +81,7 @@ void fsd::dochecks()
       prevnotify=now;
    }
    if ((now-prevlagcheck)>LAGCHECK)
-   { 
+   {
       char data[80];
       sprintf(data,"-1 %lu", mtime());
       serverinterface->sendping("*", data);
@@ -104,7 +105,7 @@ void fsd::dochecks()
       }
    }
 // WhazzUp Start
-   if ((now-prevwhazzup)>=WHAZZUPCHECK)
+   if ((now-prevwhazzup)>=whazzupinterval)
    {
       configentry *entry;
       configgroup *sysgroup=configman->getgroup("system");
@@ -162,17 +163,17 @@ void fsd::dochecks()
                      sprintf(dataseg6,"%d:%c:%d:%d:%d:%d:%d:%d:%s:%s:%s", tempflightplan->revision, tempflightplan->type, tempflightplan->deptime, tempflightplan->actdeptime, tempflightplan->hrsenroute, tempflightplan->minenroute, tempflightplan->hrsfuel, tempflightplan->minfuel, tempflightplan->altairport, tempflightplan->remarks, tempflightplan->route);
                   else
                      sprintf(dataseg6,"%s","::::::::::");
-                  sprintf(dataseg7,"::::::%s", sprintgmt(tempclient->starttime,s));
+                  sprintf(dataseg7,"::::::%s:%u", sprintgmt(tempclient->starttime,s), tempclient->pbh);
                   fprintf(wzfile,"%s:%s:%s:%s:%s:%s:%s\n", dataseg1, dataseg2, dataseg3, dataseg4, dataseg5, dataseg6, dataseg7);
                }
-               char dataline[150]; 
+               char dataline[150];
                fprintf(wzfile,"%s\n","!SERVERS");
                for (tempserver=rootserver;tempserver;tempserver=tempserver->next)
                   if (strcmp(tempserver->hostname,"n/a") != 0)
                   {
                      sprintf(dataline,"%s:%s:%s:%s:%d", tempserver->ident, tempserver->hostname, tempserver->location, tempserver->name, tempserver->flags&SERVER_SILENT?0:1);
                      fprintf(wzfile,"%s\n",dataline);
-                  }; 
+                  };
                fclose(wzfile);
 			   remove(whazzupfile);
                rename(whazzuptemp, whazzupfile);
@@ -298,6 +299,11 @@ void fsd::configure()
          certfile=strdup(entry->getdata());
       if ((entry=sysgroup->getentry("whazzup"))!=NULL)
 		 whazzupfile=strdup(entry->getdata());
+      if ((entry=sysgroup->getentry("whazzupinterval"))!=NULL)
+      {
+         whazzupinterval=entry->getint();
+         if (whazzupinterval<1) whazzupinterval=1;
+      }
    }
    configmyserver();
    readcert();
@@ -369,7 +375,7 @@ void fsd::createinterfaces()
    serverinterface=new servinterface(serverport, "server", "server interface");
    systeminterface=new sysinterface(systemport, "system","system management interface");
    systeminterface->setprompt(prompt);
-   
+
    serverinterface->setfeedstrategy(FEED_BOTH);
 
    /* Clients may send a maximum of 100000 bytes/second */
@@ -422,6 +428,3 @@ void fsd::makeconnections()
 
    serverinterface->sendreset();
 }
-
-
-

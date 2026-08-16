@@ -59,9 +59,10 @@ Runtime settings can be injected with environment variables:
 | `FSD_LOCATION` | `location` | `Nowhere` |
 | `FSD_MAXCLIENTS` | `maxclients` | `200` |
 | `FSD_WEATHER_SOURCE` | `source` | `file` |
-| `FSD_CERTS` | `cert.txt` | *(unset — keep existing file)* |
-| `FSD_MOTD` | `motd.txt` | *(unset — keep existing file)* |
-| `TZ` | — | `UTC` |
+| `FSD_WHAZZUP_INTERVAL` | `whazzupinterval` | `5` |
+| `FSD_CERTS` | `cert.txt` | *(unset; keep existing file)* |
+| `FSD_MOTD` | `motd.txt` | *(unset; keep existing file)* |
+| `TZ` | n/a | `UTC` |
 
 Change `FSD_PASSWORD` before exposing the system port. Set `FSD_HOSTNAME` to
 the public hostname or IP that clients should use.
@@ -120,4 +121,156 @@ in the Connect dialog will be accepted.
 
 The compose file publishes `6809/tcp`. Optionally also publish `3010/tcp` for
 the telnet system console (`pwd <password>` then `help`).
+
+## Protocol additions
+
+Ported from [Tallerik/BetterFSD](https://github.com/Tallerik/BetterFSD):
+
+- **Fast position updates.** `^` (`CL_FASTPOS`) is relayed as a broadcast and,
+  unlike every other client command, carries no destination field. Pilot
+  clients that support it send smoother position data than `@` alone gives.
+- **Visual update handshake.** On pilot connect the server now sends
+  `$SFSERVER:<callsign>:1` followed by `$CQSERVER:<callsign>:CAPS`, which is
+  what tells a client to start sending `^`.
+- **`pbh` in WhazzUp.** Each client row gains a trailing packed
+  pitch/bank/heading word, so consumers can show aircraft heading.
+- **METAR host** moved to `tgftp.nws.noaa.gov`; `weather.noaa.gov` is dead.
+
+## WebEye: live map
+
+`docker compose up --build` also starts **webeye**, a live traffic map on
+<http://localhost:8080>.
+
+WebEye never talks to FSD directly. FSD writes `/data/whazzup.txt` every
+`whazzupinterval` seconds; WebEye reads that file from the same volume,
+mounted read-only, and serves it as JSON plus a map.
+
+- **Backend:** Go, standard library only. Parses WhazzUp, keeps position
+  history, resolves airport coordinates, serves the API and the frontend. The
+  built frontend is embedded with `go:embed`, so the binary is self-contained.
+- **Frontend:** `webeye/src/`, Vite + Vue 3 + TypeScript + Tailwind v4,
+  Leaflet for the map. Vite builds into `webeye/static/`, which the binary
+  embeds at compile time.
+
+**Controllers are the focus**, laid out the way VATSIM Radar does it:
+
+- **Airport stations:** DEL, GND, TWR and ATIS are drawn *at their airport*,
+  not where the controller reports being: an ICAO label with a row of coloured
+  pills beneath it, one per staffed position. The airport is the first callsign
+  token and the position is the last, so `EDDM_TWR`, `EDDM_N_TWR` and
+  `EDDM_X_TWR` all land on the same EDDM station. Middle tokens are ignored.
+- **Sectors:** APP and CTR are drawn as **real VATGlasses airspace polygons**,
+  in that sector's own VATGlasses colour, with the callsign as plain coloured
+  text and no label box.
+
+Sector ownership follows VATGlasses' own rules: every airspace volume carries an
+ordered list of positions, and the volume goes to the highest-priority position
+that is online. So a centre picks up the sectors nobody is staffing, and hands
+them back when that controller connects. A controller who logs in without a
+sector id (`EDDM_APP` rather than `EDMM_ALB_CTR`) claims every matching position
+sharing the prefix.
+
+Radar positions with no VATGlasses match get a plain label where they sit, not
+an invented circle. Pilots are secondary and can be toggled off the map.
+
+**Sectors are sliced by altitude.** VATGlasses airspace is stacked in bands, so
+drawing every volume at once is unreadable. The level selector in the centre of
+the top bar picks a flight level and only the volumes owning that level are
+drawn. A Munich approach sector disappears above roughly FL195, while the
+centre sectors above it expand. Volumes the data leaves open-topped (`max: 0`)
+are treated as unlimited rather than being filtered out.
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Map: controller sectors, aircraft with heading, trails, routes |
+| `/fsd-status` | JSON snapshot of the current traffic |
+| `/healthz` | `{"ok": true}` once a WhazzUp file has been read |
+
+| Variable | Meaning | Default |
+| --- | --- | --- |
+| `WEBEYE_PORT` | Published port | `8080` |
+| `WEBEYE_POLL` | Seconds between file reads | `5` |
+| `WEBEYE_HISTORY_POINTS` | Trail length per aircraft | `60` |
+| `WEBEYE_HISTORY_TTL` | Seconds a disconnected trail is kept | `600` |
+| `WEBEYE_VATGLASSES` | Directory of extra VATGlasses region files | *(bundled only)* |
+
+Only the German dataset (`ed.json`) is bundled, because the full VATGlasses
+database is ~29 MB. To cover more airspace, drop further region files into a
+directory and point `WEBEYE_VATGLASSES` at it; they are merged over the
+bundled set:
+
+```bash
+curl -O https://raw.githubusercontent.com/lennycolton/vatglasses-data/main/data/eg.json
+```
+
+Refresh rate is bounded by `FSD_WHAZZUP_INTERVAL`. WebEye cannot show data
+faster than FSD writes it. Both default to 5 seconds.
+
+Aircraft heading and the on-ground flag come from the `pbh` field, a packed
+pitch/bank/heading word appended to each WhazzUp client row.
+
+Selecting an aircraft draws its route as two great-circle legs: departure to
+aircraft solid, aircraft to destination dashed. Airport coordinates come from a
+trimmed OurAirports table (19,171 ICAO codes) embedded in the binary, so this
+needs no external lookup; a route leg is simply omitted when the ICAO code is
+unknown.
+
+The basemap is CARTO's free vector style rendered with MapLibre GL inside
+Leaflet, patched so every label prefers its English name (`webeye/src/src/basemap.ts`).
+The unpatched style otherwise stacks several scripts on large water bodies
+and countries. Browsers viewing the map need internet access for tiles,
+glyphs and the style itself; if that fetch fails, WebEye falls back to plain
+CARTO raster tiles (no English forcing, since raster has no per-label
+language to select) rather than showing a blank map. Point `STYLE_URL` and
+`FALLBACK_TILES` in `webeye/src/src/basemap.ts` / `TrafficMap.vue` at your own
+tile server to run fully offline.
+
+To run the server without the map, start just the one service:
+
+```bash
+docker compose up --build fsd
+```
+
+### Development
+
+Build the frontend first. The Go binary embeds `webeye/static`, so it will
+not compile without it:
+
+```bash
+cd webeye/src && npm install && npm run build
+```
+
+Then build and run the backend against a WhazzUp file:
+
+```bash
+cd webeye && go build -o webeye . && WEBEYE_WHAZZUP=/path/to/whazzup.txt ./webeye
+```
+
+For frontend work, run Vite instead; it proxies `/fsd-status` to the running
+Go server and gives you hot reload. Set `WEBEYE_API` if the backend is not on
+`http://127.0.0.1:8080`:
+
+```bash
+cd webeye/src && npm run dev
+```
+
+Go tests:
+
+```bash
+cd webeye && go test ./...
+```
+
+### Attribution and licensing
+
+Two bundled datasets restrict how WebEye may be used:
+
+| Source | Used for | Licence |
+| --- | --- | --- |
+| [VATSIM Radar](https://github.com/VATSIM-Radar/vatsim-radar) | Aircraft icons, colour palette | CC BY-NC 4.0 |
+| [VATGlasses](https://github.com/lennycolton/vatglasses-data) | Sector polygons | CC BY-NC-**SA** 4.0 |
+| [OurAirports](https://ourairports.com/data/) | Airport coordinates | Public domain |
+
+Both CC licences are **non-commercial**, and the VATGlasses one adds
+**ShareAlike**. See [NOTICE.md](NOTICE.md) for the full terms and for how to
+strip either dataset. WebEye degrades gracefully without them.
 

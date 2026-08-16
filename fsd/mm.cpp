@@ -59,7 +59,7 @@ mm::mm()
 
    if (source==SOURCE_DOWNLOAD)
    {
-      if (!metarhost) metarhost=strdup("weather.noaa.gov");
+      if (!metarhost) metarhost=strdup("tgftp.nws.noaa.gov");
       if (!metardir) metardir=strdup("data/observations/metar/cycles/");
    }
 

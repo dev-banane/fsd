@@ -75,10 +75,18 @@ set_conf() {
   key=$1
   value=$2
   file=$3
-  awk -v k="$key" -v v="$value" '
-    index($0, k "=") == 1 { print k "=" v; next }
-    { print }
-  ' "$file" > "${file}.tmp"
+  section=${4:-[system]}
+  if grep -q "^${key}=" "$file"; then
+    awk -v k="$key" -v v="$value" '
+      index($0, k "=") == 1 { print k "=" v; next }
+      { print }
+    ' "$file" > "${file}.tmp"
+  else
+    awk -v k="$key" -v v="$value" -v sec="$section" '
+      { print }
+      $0 == sec { print k "=" v }
+    ' "$file" > "${file}.tmp"
+  fi
   mv "${file}.tmp" "$file"
 }
 
@@ -92,7 +100,8 @@ set_conf() {
 [ -n "${FSD_PASSWORD:-}" ] && set_conf password "$FSD_PASSWORD" "$CONFIG"
 [ -n "${FSD_LOCATION:-}" ] && set_conf location "$FSD_LOCATION" "$CONFIG"
 [ -n "${FSD_MAXCLIENTS:-}" ] && set_conf maxclients "$FSD_MAXCLIENTS" "$CONFIG"
-[ -n "${FSD_WEATHER_SOURCE:-}" ] && set_conf source "$FSD_WEATHER_SOURCE" "$CONFIG"
+[ -n "${FSD_WEATHER_SOURCE:-}" ] && set_conf source "$FSD_WEATHER_SOURCE" "$CONFIG" "[weather]"
+[ -n "${FSD_WHAZZUP_INTERVAL:-}" ] && set_conf whazzupinterval "$FSD_WHAZZUP_INTERVAL" "$CONFIG"
 
 chown -R fsd:fsd "$DATA_DIR"
 

@@ -1,0 +1,6 @@
+src/node_modules
+static
+webeye
+webeye.exe
+*_test.go
+__pycache__

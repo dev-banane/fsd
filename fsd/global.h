@@ -8,15 +8,15 @@
 
 #ifdef WIN32
 	#define STRCASECMP(a,b)	_stricmp(a,b)
-	#define WRITESOCK(a,b,c) send(a,b,c,0) 
-	#define READSOCK(a,b,c) recv(a,b,c,0) 
+	#define WRITESOCK(a,b,c) send(a,b,c,0)
+	#define READSOCK(a,b,c) recv(a,b,c,0)
 	#define socklen_t	int
-	#define CLOSESOCKET(a) closesocket(a) 
+	#define CLOSESOCKET(a) closesocket(a)
 #else
 	#define STRCASECMP(a,b)	strcasecmp(a,b)
-	#define WRITESOCK(a,b,c) write(a,b,c) 
-	#define READSOCK(a,b,c) read(a,b,c) 
-	#define CLOSESOCKET(a) close(a) 
+	#define WRITESOCK(a,b,c) write(a,b,c)
+	#define READSOCK(a,b,c) read(a,b,c)
+	#define CLOSESOCKET(a) close(a)
 #endif
 
 #define PRODUCT "FSFDT Windows FSD Beta from FSD V3.000 draft 9"
@@ -43,6 +43,12 @@
 #define MAXHOPS 10
 #define GUARDRETRY 120
 #define CALLSIGNBYTES 12
+/* Do NOT raise this on its own. absuser::run() reads lines into a 1000-byte
+   stack buffer and nextline() guards the strcpy only with
+   "len < MAXLINELENGTH"; catcommand() then strcat()s the same data into
+   further 1000-byte buffers. Raising this to 1026 makes any client able to smash the stack with a
+   ~1000 character line. Raising it safely means resizing those buffers
+   first. */
 #define MAXLINELENGTH 512
 #define MAXMETARDOWNLOADTIME 900
 #define CERTFILECHECK 120

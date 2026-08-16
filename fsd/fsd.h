@@ -14,6 +14,7 @@ class fsd
    pman *pmanager;
    char *certfile;
    char *whazzupfile;
+   int whazzupinterval;
    time_t timer, prevnotify, prevlagcheck, certfilestat, prevcertcheck;
    void configmyserver();
    void configure();

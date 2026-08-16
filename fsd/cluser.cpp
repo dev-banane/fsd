@@ -46,6 +46,8 @@ const char *clcmdnames[]=
    "$CR",
    "$!!",
    "#DL",
+   "$SF",
+   "^",
    NULL
 };
 
@@ -84,7 +86,7 @@ cluser::cluser(int fd, clinterface *p, char *pn, int portnum, int gg):
 }
 cluser::~cluser()
 {
-   if (thisclient) 
+   if (thisclient)
    {
       int type=thisclient->type;
       serverinterface->sendrmclient(NULL,"*",thisclient, this);
@@ -181,6 +183,8 @@ void cluser::execaa(char **s, int count)
    }
    if (atoi(s[6])!=NEEDREVISION)
    {
+      dolog(L_INFO,"ATC login %s from %s rejected: protocol revision %s "
+         "(need %d)", s[0], peer, s[6], NEEDREVISION);
       showerror(ERR_REVISION, "");
       kill(KILL_PROTOCOL);
       return;
@@ -232,6 +236,8 @@ void cluser::execap(char **s, int count)
    }
    if (atoi(s[5])!=NEEDREVISION)
    {
+      dolog(L_INFO,"pilot login %s from %s rejected: protocol revision %s "
+         "(need %d)", s[0], peer, s[5], NEEDREVISION);
       showerror(ERR_REVISION, "");
       kill(KILL_PROTOCOL);
       return;
@@ -260,6 +266,26 @@ void cluser::execap(char **s, int count)
       atoi(s[6]));
    serverinterface->sendaddclient("*",thisclient, NULL, this, 0);
    readmotd();
+   sendvisupdates();
+}
+void cluser::sendvisupdates()
+{
+   clientinterface->sendgeneric(thisclient->callsign, thisclient, NULL,
+      NULL, "SERVER", "1", CL_VISUPDATES);
+   clientinterface->sendgeneric(thisclient->callsign, thisclient, NULL,
+      NULL, "SERVER", "CAPS", CL_CQ);
+}
+void cluser::execfastpos(char **s, int count, int cmd, int multiok)
+{
+   char data[1000]="";
+   if (count==0)
+   {
+      showerror(ERR_SYNTAX, "");
+      return;
+   }
+   catcommand(s+1, count-1, data);
+   if (!checksource(s[0])) return;
+   serverinterface->sendmulticast(thisclient, "*", data, cmd, multiok, this);
 }
 void cluser::execmulticast(char **s, int count, int cmd, int nargs, int multiok)
 {
@@ -288,7 +314,7 @@ void cluser::execd(char **s, int count)
 void cluser::execpilotpos(char **array, int count)
 {
    if (count<10)
-   { 
+   {
       showerror(ERR_SYNTAX, "");
       return;
    }
@@ -299,7 +325,7 @@ void cluser::execpilotpos(char **array, int count)
 void cluser::execatcpos(char **array, int count)
 {
    if (count<8)
-   { 
+   {
       showerror(ERR_SYNTAX, "");
       return;
    }
@@ -353,7 +379,7 @@ void cluser::execcq(char **array, int count)
       return;
    }
    if (STRCASECMP(array[1], "server"))
-   { 
+   {
       execmulticast(array, count, CL_CQ, 1, 1);
       return;
    }
@@ -369,7 +395,7 @@ void cluser::execcq(char **array, int count)
 	}
    }
    if (!STRCASECMP(array[2], "fp"))
-   { 
+   {
       client *cl=getclient(array[3]);
       if (!cl)
       {
@@ -446,7 +472,7 @@ void cluser::doparse(char *s)
       case CL_ATCPOS     : execatcpos(array,count); break;
       case CL_PONG       :
       case CL_PING       : execmulticast(array,count,index,0,1); break;
-      case CL_MESSAGE    : execmulticast(array,count,index,1,1); break; 
+      case CL_MESSAGE    : execmulticast(array,count,index,1,1); break;
       case CL_REQHANDOFF :
       case CL_ACHANDOFF  : execmulticast(array,count,index,1,0); break;
       case CL_SB         :
@@ -458,6 +484,7 @@ void cluser::doparse(char *s)
       case CL_CR         : execmulticast(array, count, index, 2, 0); break;
       case CL_CQ         : execcq(array, count); break;
       case CL_KILL       : execkill(array, count); break;
+      case CL_FASTPOS    : execfastpos(array,count,index,1); break;
       default            : showerror(ERR_SYNTAX, ""); break;
    }
 }

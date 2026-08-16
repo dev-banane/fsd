@@ -50,7 +50,7 @@ void addfile(char *name, char *string,...)
 void dolog(int level, const char *string, ...)
 {
    char buf[1000], buf2[1200];
-   long secs=time(NULL);
+   time_t secs=time(NULL);
    struct tm *loctime;
    FILE *logfile=fopen(LOGFILE,"a");
    char *sident=(char *)(myserver?myserver->ident:"");

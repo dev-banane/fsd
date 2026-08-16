@@ -1,0 +1,33 @@
+{
+  "name": "webeye-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "predev": "npm run sync-maplibre",
+    "dev": "vite",
+    "prebuild": "npm run sync-maplibre",
+    "build": "vue-tsc -b && vite build && npm run keep",
+    "sync-maplibre": "node scripts/sync-maplibre-worker.mjs",
+    "keep": "node -e \"require('fs').writeFileSync('../static/.gitkeep','')\"",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.31.0",
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
+    "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.4.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/leaflet": "^1.9.16",
+    "@types/node": "^26.2.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.7.3",
+    "vite": "^6.0.11",
+    "vue-tsc": "^2.2.0"
+  }
+}

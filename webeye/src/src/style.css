@@ -1,0 +1,346 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --color-ink-900: #1a1a1a; /* backgroundLevel1 */
+  --color-ink-800: #1e1e1e; /* backgroundLevel2 */
+  --color-ink-700: #232323;
+  --color-ink-600: #272727; /* backgroundLevel4 */
+  --color-ink-500: #2c2c2c; /* backgroundLevel5 */
+  --color-ink-400: #313131; /* strokeDefault */
+  --color-ink-300: #353535;
+  --color-ink-200: #3a3a3a; /* strokeSecondary */
+  --color-ink-100: #4a4a4a;
+
+  --color-chalk: #f6f6f6; /* typographyPrimary */
+  --color-chalk-dim: #c4c4c4; /* typographySecondary */
+
+  --color-brand: #458cff; /* blue400 */
+  --color-brand-stroke: #3b6cec; /* blue500 */
+  --color-danger: #d32c00; /* red500 */
+  --color-warn: #ffa940; /* orange500 */
+  --color-ok: #52ab29; /* green500 */
+
+  --color-pos-del: #458cff; /* blue400 */
+  --color-pos-gnd: #4a9c25; /* green600 */
+  --color-pos-twr: #d32c00; /* red500 */
+  --color-pos-app: #ee7901; /* citrus600 */
+  --color-pos-ctr: #33b69c; /* teal500 */
+  --color-pos-atis: #d88500; /* orange600 */
+
+  --color-ac-active: #d88500; /* orange600 */
+  --color-ac-hover: #ffa940; /* orange500 */
+  --color-popup: #151515;
+  --color-icao: #dedee7;
+
+  --font-sans: "Libre Franklin", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Mono",
+    Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-900 text-chalk font-sans antialiased;
+    margin: 0;
+    letter-spacing: -0.011em;
+  }
+
+  .nums {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-ink-400 rounded-full;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-100;
+  }
+}
+
+.leaflet-container {
+  @apply bg-ink-900 font-sans;
+  outline: none;
+}
+
+.leaflet-control-zoom {
+  @apply overflow-hidden rounded-lg border border-ink-400 shadow-lg;
+}
+
+.leaflet-control-zoom a {
+  @apply bg-ink-700 text-chalk-dim border-0 transition-colors;
+}
+
+.leaflet-control-zoom a:hover {
+  @apply bg-ink-500 text-chalk;
+}
+
+.leaflet-control-zoom a:first-child {
+  @apply border-b border-ink-400;
+}
+
+.leaflet-container .leaflet-control-attribution {
+  @apply bg-ink-800/80 text-chalk-dim/70 rounded-tl-lg px-2 py-0.5 text-[10px];
+}
+
+.leaflet-control-attribution a {
+  @apply text-chalk-dim;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--color-popup);
+  color: var(--color-chalk);
+  border: 1px solid var(--color-ink-400);
+  box-shadow: none;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 8px;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  width: 20px;
+  height: 20px;
+  color: var(--color-chalk-dim);
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--color-danger);
+}
+
+.leaflet-marker-icon:focus {
+  outline: none;
+}
+
+.we-ac {
+  --ac: var(--color-brand-stroke);
+}
+
+.we-ac:hover {
+  --ac: var(--color-ac-hover);
+}
+
+.we-ac--active,
+.we-ac--active:hover {
+  --ac: var(--color-ac-active);
+}
+
+.we-station {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  transform: translateX(-50%);
+}
+
+.we-station-icao {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-icao);
+}
+
+.we-station--active .we-station-icao {
+  color: #eeeeee;
+}
+
+.we-station-pills {
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+  color: #f7f7fa;
+}
+
+.we-station-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fdfdfd;
+  transition: transform 0.3s;
+}
+
+.we-station-pill:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.we-station-pill:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.we-station-pill:only-child {
+  border-radius: 4px;
+}
+
+.we-station-pill:hover:not(:only-child) {
+  transform: scale(1.1);
+}
+
+.we-station-pill--active {
+  width: 16px;
+  height: 16px;
+}
+
+.we-sector-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  transform: translate(-50%, -50%);
+}
+
+.we-sector-label--active {
+  padding: 4px 4px 2px 4px;
+  border: 1px solid rgb(224 224 224 / 0.2);
+  border-radius: 4px;
+  color: #eeeeee;
+}
+
+.we-card {
+  width: 248px;
+  font-size: 13px;
+}
+
+.we-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+  padding: 8px;
+  padding-right: 28px;
+  border-bottom: 1px solid var(--color-ink-400);
+}
+
+.we-card-title {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--color-brand);
+}
+
+.we-card-sub {
+  font-size: 13px;
+  color: var(--color-chalk-dim);
+}
+
+.we-card-route {
+  padding: 8px;
+  border-width: 1px 0;
+  border-style: dashed;
+  border-color: rgb(250 250 250 / 0.12);
+  background: var(--color-ink-800);
+}
+
+.we-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.we-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.we-card-k {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-chalk-dim);
+}
+
+.we-card-v {
+  font-size: 13px;
+}
+
+.we-atc-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.3s;
+}
+
+.we-atc-row + .we-atc-row {
+  border-top: 1px dashed var(--color-ink-400);
+}
+
+.we-atc-row:hover {
+  background: rgb(250 250 250 / 0.04);
+}
+
+.we-atc-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.we-facility {
+  width: 40px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #f7f7fa;
+  text-align: center;
+}
+
+.we-atc-callsign {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.we-atc-freq {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.we-atc-name {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-chalk-dim);
+}

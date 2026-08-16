@@ -19,6 +19,7 @@ class cluser : public absuser
    void execaa(char **, int);
    void execap(char **, int);
    void execmulticast(char **, int, int, int, int);
+   void execfastpos(char **, int, int, int);
    void execpilotpos(char **, int);
    void execatcpos(char **, int);
    void execfp(char **, int);
@@ -27,6 +28,7 @@ class cluser : public absuser
    void execcq(char **, int);
    void execkill(char **, int);
    void readmotd();
+   void sendvisupdates();
    public:
 
    client *thisclient;
