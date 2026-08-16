@@ -50,5 +50,10 @@ export async function aircraftMarkup(
   return `<div style="width:${size}px;height:${size}px;transform:rotate(${heading}deg)">${tinted}</div>`;
 }
 
-export const aircraftSize = (zoom: number): number =>
-  Math.round(Math.max(18, Math.min(40, 12 + zoom * 2.2)));
+export const aircraftSize = (zoom: number): number => {
+  const coarse =
+    typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const min = coarse ? 22 : 18;
+  const max = coarse ? 44 : 40;
+  return Math.round(Math.max(min, Math.min(max, 12 + zoom * 2.2)));
+};

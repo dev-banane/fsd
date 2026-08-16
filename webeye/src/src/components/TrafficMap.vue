@@ -25,6 +25,8 @@ const emit = defineEmits<{ select: [callsign: string | null] }>();
 const el = ref<HTMLDivElement | null>(null);
 let map: L.Map | undefined;
 let resizeObserver: ResizeObserver | undefined;
+let zoomControl: L.Control | undefined;
+let zoomMqCleanup: (() => void) | undefined;
 const planes = new Map<string, L.Marker>();
 const trails = new Map<string, L.Polyline>();
 const sectorShapes = new Map<string, L.Polygon>();
@@ -34,9 +36,19 @@ let routeLayers: L.Polyline[] = [];
 
 const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const FALLBACK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const DESKTOP_MQ = "(min-width: 768px)";
 
 const placed = (o: { lat: number | null; lon: number | null }) =>
   o.lat != null && o.lon != null && !(o.lat === 0 && o.lon === 0);
+
+const popupOpts = (): L.PopupOptions => {
+  const mobile = typeof window !== "undefined" && !window.matchMedia(DESKTOP_MQ).matches;
+  return {
+    maxWidth: 300,
+    autoPanPaddingTopLeft: L.point(16, mobile ? 12 : 20),
+    autoPanPaddingBottomRight: L.point(16, mobile ? 88 : 20),
+  };
+};
 
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"]/g, (c) =>
@@ -138,7 +150,7 @@ function renderStations() {
           pane: "atcLabels",
           riseOnHover: true,
         })
-          .bindPopup(stationPopup(station))
+          .bindPopup(stationPopup(station), popupOpts())
           .on("click", () => emit("select", station.controllers[0].callsign))
           .addTo(map!),
       );
@@ -168,7 +180,7 @@ function renderStations() {
           pane: "atcLabels",
           riseOnHover: true,
         })
-          .bindPopup(stationPopup(pseudo))
+          .bindPopup(stationPopup(pseudo), popupOpts())
           .on("click", () => emit("select", c.callsign))
           .addTo(map!),
       );
@@ -182,12 +194,12 @@ function renderStations() {
 function sectorLabelIcon(c: Controller, active: boolean, vgColor?: string): L.DivIcon {
   const color = sectorColor(c, vgColor);
   return L.divIcon({
-    className: "",
+    className: "we-sector-marker",
     iconSize: [0, 0],
     iconAnchor: [0, 0],
     html: `
       <div class="we-sector-label${active ? " we-sector-label--active" : ""}"
-           style="color:${active ? "#eeeeee" : color};${active ? `background:${color}` : ""}">
+           style="--we-sector:${color}">
         ${esc(c.callsign)}
       </div>`,
   });
@@ -294,7 +306,7 @@ function renderSectors() {
           icon: sectorLabelIcon(c, active, entry.color),
           pane: "atcLabels",
         })
-          .bindPopup(sectorPopup(c, entry.name))
+          .bindPopup(sectorPopup(c, entry.name), popupOpts())
           .on("click", () => emit("select", callsign))
           .addTo(map!),
       );
@@ -316,7 +328,7 @@ function renderSectors() {
           icon: sectorLabelIcon(c, active),
           pane: "atcLabels",
         })
-          .bindPopup(sectorPopup(c, "no VATGlasses data"))
+          .bindPopup(sectorPopup(c, "no VATGlasses data"), popupOpts())
           .on("click", () => emit("select", c.callsign))
           .addTo(map!),
       );
@@ -376,7 +388,7 @@ async function renderPilots() {
       planes.set(
         p.callsign,
         L.marker([p.lat!, p.lon!], { icon, riseOnHover: true })
-          .bindPopup(pilotPopup(p))
+          .bindPopup(pilotPopup(p), popupOpts())
           .on("click", () => emit("select", p.callsign))
           .addTo(map!),
       );
@@ -449,9 +461,11 @@ function focus(callsign: string | null) {
 
 onMounted(() => {
   map = L.map(el.value!, {
-    zoomControl: true,
+    zoomControl: false,
     worldCopyJump: true,
     zoomSnap: 0.5,
+    tapTolerance: 25,
+    bounceAtZoomLimits: false,
     maxBounds: [
       [-90, -Infinity],
       [90, Infinity],
@@ -463,6 +477,18 @@ onMounted(() => {
   map.createPane("atcSectors").style.zIndex = "350";
   map.createPane("atcLabels").style.zIndex = "650";
   map.attributionControl.setPrefix(false);
+
+  const zoomMq = window.matchMedia(DESKTOP_MQ);
+  const placeZoom = () => {
+    if (!map) return;
+    if (zoomControl) map.removeControl(zoomControl);
+    zoomControl = L.control
+      .zoom({ position: zoomMq.matches ? "topleft" : "topright" })
+      .addTo(map);
+  };
+  placeZoom();
+  zoomMq.addEventListener("change", placeZoom);
+  zoomMqCleanup = () => zoomMq.removeEventListener("change", placeZoom);
 
   loadEnglishBasemapStyle()
     .then((style) => {
@@ -490,6 +516,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  zoomMqCleanup?.();
   resizeObserver?.disconnect();
   map?.remove();
 });

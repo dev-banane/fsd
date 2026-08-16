@@ -18,7 +18,7 @@ func testStatic() fstest.MapFS {
 }
 
 func TestSpaHandlerMjsContentType(t *testing.T) {
-	h := spaHandler(testStatic())
+	h := spaHandler(testStatic(), "WebEye")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/assets/worker.mjs", nil))
 	if rec.Code != http.StatusOK {
@@ -30,7 +30,7 @@ func TestSpaHandlerMjsContentType(t *testing.T) {
 }
 
 func TestSpaHandlerMissingAssetIs404(t *testing.T) {
-	h := spaHandler(testStatic())
+	h := spaHandler(testStatic(), "WebEye")
 	for _, path := range []string{"/assets/missing.js", "/aircraft/missing.svg", "/does-not-exist.png"} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
@@ -41,7 +41,7 @@ func TestSpaHandlerMissingAssetIs404(t *testing.T) {
 }
 
 func TestSpaHandlerRouteFallsBackToShell(t *testing.T) {
-	h := spaHandler(testStatic())
+	h := spaHandler(testStatic(), "WebEye")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/some/deep/route", nil))
 	if rec.Code != http.StatusOK {
@@ -53,7 +53,7 @@ func TestSpaHandlerRouteFallsBackToShell(t *testing.T) {
 }
 
 func TestSpaHandlerServesRealAssets(t *testing.T) {
-	h := spaHandler(testStatic())
+	h := spaHandler(testStatic(), "WebEye")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/assets/app.js", nil))
 	if rec.Code != http.StatusOK {
@@ -61,5 +61,30 @@ func TestSpaHandlerServesRealAssets(t *testing.T) {
 	}
 	if got := rec.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
 		t.Errorf("Cache-Control = %q, want immutable for /assets/", got)
+	}
+}
+
+func TestSpaHandlerInjectsTitle(t *testing.T) {
+	fsys := fstest.MapFS{
+		"index.html": &fstest.MapFile{Data: []byte(
+			`<html><head><title>WebEye</title><meta name="webeye-title" content="WebEye"></head></html>`,
+		)},
+	}
+	h := spaHandler(fsys, `Night & "Watch"`)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := rec.Body.String()
+	if !strings.Contains(body, "<title>Night &amp; &#34;Watch&#34;</title>") {
+		t.Errorf("title tag = %q", body)
+	}
+	if !strings.Contains(body, `content="Night &amp; &#34;Watch&#34;"`) {
+		t.Errorf("title meta = %q", body)
+	}
+}
+
+func TestLoadConfigTitle(t *testing.T) {
+	t.Setenv("WEBEYE_TITLE", "EDGG Radar")
+	if got := loadConfig().title; got != "EDGG Radar" {
+		t.Errorf("title = %q, want EDGG Radar", got)
 	}
 }

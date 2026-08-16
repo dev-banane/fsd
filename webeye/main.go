@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
+	"html"
 	"io/fs"
 	"log"
 	"mime"
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +29,7 @@ var staticFiles embed.FS
 type config struct {
 	whazzup       string
 	addr          string
+	title         string
 	poll          time.Duration
 	historyPoints int
 	historyTTL    time.Duration
@@ -60,10 +64,28 @@ func loadConfig() config {
 	return config{
 		whazzup:       env("WEBEYE_WHAZZUP", "/data/whazzup.txt"),
 		addr:          ":" + env("WEBEYE_PORT", "8080"),
+		title:         env("WEBEYE_TITLE", "WebEye"),
 		poll:          envSeconds("WEBEYE_POLL", 5),
 		historyPoints: envInt("WEBEYE_HISTORY_POINTS", 60),
 		historyTTL:    envSeconds("WEBEYE_HISTORY_TTL", 600),
 	}
+}
+
+var (
+	titleTag  = regexp.MustCompile(`<title>[^<]*</title>`)
+	titleMeta = regexp.MustCompile(`<meta name="webeye-title" content="[^"]*"`)
+)
+
+func injectTitle(page []byte, title string) []byte {
+	safe := html.EscapeString(title)
+	page = bytes.ReplaceAll(page, []byte("__WEBEYE_TITLE__"), []byte(safe))
+	page = titleTag.ReplaceAllFunc(page, func([]byte) []byte {
+		return []byte("<title>" + safe + "</title>")
+	})
+	page = titleMeta.ReplaceAllFunc(page, func([]byte) []byte {
+		return []byte(`<meta name="webeye-title" content="` + safe + `"`)
+	})
+	return page
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
@@ -74,12 +96,29 @@ func writeJSON(w http.ResponseWriter, v any) {
 	}
 }
 
-func spaHandler(root fs.FS) http.Handler {
+func spaHandler(root fs.FS, title string) http.Handler {
 	files := http.FS(root)
 	server := http.FileServer(files)
 
+	raw, err := fs.ReadFile(root, "index.html")
+	if err != nil {
+		log.Fatalf("webeye: index.html missing: %v", err)
+	}
+	index := injectTitle(raw, title)
+
+	serveIndex := func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Write(index)
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		clean := path.Clean("/" + r.URL.Path)
+
+		if clean == "/" || clean == "/index.html" {
+			serveIndex(w)
+			return
+		}
 
 		if f, err := files.Open(clean); err == nil {
 			info, statErr := f.Stat()
@@ -100,10 +139,7 @@ func spaHandler(root fs.FS) http.Handler {
 			return
 		}
 
-		r2 := r.Clone(r.Context())
-		r2.URL.Path = "/"
-		w.Header().Set("Cache-Control", "no-cache")
-		server.ServeHTTP(w, r2)
+		serveIndex(w)
 	})
 }
 
@@ -142,7 +178,7 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]bool{"ok": !cache.Snapshot().Stale})
 	})
-	mux.Handle("/", spaHandler(assets))
+	mux.Handle("/", spaHandler(assets, cfg.title))
 
 	server := &http.Server{
 		Addr:              cfg.addr,

@@ -7,6 +7,7 @@ import { buildStations, isSectorPosition, AIRPORT_POSITIONS, PILL_ORDER, positio
 const props = defineProps<{ status: Status; selected: string | null }>();
 const emit = defineEmits<{
   select: [callsign: string | null];
+  activate: [];
   "update:showPilots": [value: boolean];
 }>();
 
@@ -65,19 +66,25 @@ const pick = (cs: string) => emit("select", props.selected === cs ? null : cs);
 </script>
 
 <template>
-  <aside class="flex w-[340px] shrink-0 flex-col border-r border-ink-400 bg-ink-800">
-    <div class="p-3 pb-2">
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div class="we-panel-search p-3 pb-2">
       <input
         v-model="query"
         type="search"
+        enterkeyhint="search"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
         placeholder="Filter callsign, name, frequency…"
-        class="w-full rounded-lg border border-ink-400 bg-ink-900 px-3 py-1.5
-               text-[12px] text-chalk placeholder:text-chalk-dim/50
-               focus:border-brand-stroke focus:outline-none"
+        class="min-h-11 w-full rounded-lg border border-ink-400 bg-ink-900 px-3 py-2
+               text-base text-chalk placeholder:text-chalk-dim/50
+               focus:border-brand-stroke focus:outline-none md:min-h-0 md:py-1.5
+               md:text-[12px]"
+        @focus="emit('activate')"
       />
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto pb-3">
+    <div class="we-panel-list min-h-0 flex-1 overflow-y-auto">
       <h2
         class="px-3 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-chalk-dim/70"
       >
@@ -222,5 +229,5 @@ const pick = (cs: string) => emit("select", props.selected === cs ? null : cs);
         </button>
       </template>
     </div>
-  </aside>
+  </div>
 </template>

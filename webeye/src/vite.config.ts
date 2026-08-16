@@ -3,9 +3,19 @@ import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 
 const API_TARGET = process.env.WEBEYE_API ?? "http://127.0.0.1:8080";
+const TITLE = process.env.WEBEYE_TITLE || process.env.VITE_WEBEYE_TITLE || "WebEye";
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+    {
+      name: "webeye-title",
+      transformIndexHtml(html) {
+        return html.replaceAll("__WEBEYE_TITLE__", TITLE);
+      },
+    },
+  ],
   build: {
     outDir: "../static",
     emptyOutDir: true,

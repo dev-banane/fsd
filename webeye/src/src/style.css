@@ -45,12 +45,21 @@
   body,
   #app {
     height: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply bg-ink-900 text-chalk font-sans antialiased;
     margin: 0;
     letter-spacing: -0.011em;
+    overscroll-behavior: none;
   }
 
   .nums {
@@ -138,6 +147,142 @@
   outline: none;
 }
 
+.we-header {
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  padding-bottom: 0.5rem;
+  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 768px) {
+  .we-header {
+    padding-top: calc(0.625rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 0.625rem;
+    padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+  }
+}
+
+.we-sheet-chrome {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  cursor: grab;
+  border-bottom: 1px solid transparent;
+}
+
+.we-sheet.is-open .we-sheet-chrome {
+  border-bottom-color: var(--color-ink-400);
+}
+
+.we-sheet.is-dragging .we-sheet-chrome {
+  cursor: grabbing;
+}
+
+.we-panel-search {
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .we-sheet:not(.is-open) .we-panel-search {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.we-panel-list {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  .we-sheet {
+    --we-dock: 7.75rem;
+    z-index: 20;
+    height: min(72dvh, calc(100dvh - 4.25rem - env(safe-area-inset-top, 0px)));
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    border-top-width: 1px;
+    box-shadow: 0 -16px 40px -18px rgb(0 0 0 / 0.55);
+    transform: translate3d(
+      0,
+      calc(100% - var(--we-dock) - env(safe-area-inset-bottom, 0px)),
+      0
+    );
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow: hidden;
+  }
+
+  .we-sheet.is-open {
+    transform: translate3d(0, 0, 0);
+  }
+
+  .we-sheet.is-dragging {
+    transition: none;
+    will-change: transform;
+  }
+
+  .we-atc-row {
+    padding: 10px 16px;
+    min-height: 48px;
+  }
+
+  .we-card {
+    width: min(248px, calc(100vw - 2.5rem));
+  }
+
+  .leaflet-control-zoom a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    font-size: 18px;
+  }
+
+  .leaflet-top.leaflet-right {
+    top: 8px;
+    right: calc(8px + env(safe-area-inset-right, 0px));
+  }
+
+  .leaflet-bottom {
+    bottom: calc(var(--we-dock, 7.75rem) + env(safe-area-inset-bottom, 0px) + 8px);
+    transition: bottom 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .leaflet-popup-close-button {
+    top: 6px !important;
+    right: 6px !important;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    line-height: 28px;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 500px) {
+  .we-sheet {
+    height: calc(100dvh - 2.75rem - env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (min-width: 768px) {
+  .we-sheet {
+    transform: none !important;
+    transition: none !important;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .we-sheet,
+  .leaflet-bottom {
+    transition: none;
+  }
+}
+
 .we-ac {
   --ac: var(--color-brand-stroke);
 }
@@ -211,20 +356,36 @@
   height: 16px;
 }
 
+.leaflet-marker-icon.we-sector-marker {
+  background: none !important;
+  border: none !important;
+  overflow: visible;
+}
+
 .we-sector-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 4px 7px 3px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.15;
   white-space: nowrap;
   user-select: none;
+  pointer-events: auto;
   transform: translate(-50%, -50%);
+  color: var(--we-sector);
+  background: color-mix(in srgb, var(--we-sector) 28%, transparent);
 }
 
 .we-sector-label--active {
-  padding: 4px 4px 2px 4px;
-  border: 1px solid rgb(224 224 224 / 0.2);
-  border-radius: 4px;
   color: #eeeeee;
+  background: var(--we-sector);
+  border: 1px solid rgb(224 224 224 / 0.2);
 }
 
 .we-card {

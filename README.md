@@ -58,7 +58,7 @@ Runtime settings can be injected with environment variables:
 | `FSD_NAME` | `name` | `FSD Docker` |
 | `FSD_LOCATION` | `location` | `Nowhere` |
 | `FSD_MAXCLIENTS` | `maxclients` | `200` |
-| `FSD_WEATHER_SOURCE` | `source` | `file` |
+| `FSD_WEATHER_SOURCE` | `source` | `file` (empty `metar.txt`). Use `download` for live NOAA METAR |
 | `FSD_WHAZZUP_INTERVAL` | `whazzupinterval` | `5` |
 | `FSD_CERTS` | `cert.txt` | *(unset; keep existing file)* |
 | `FSD_MOTD` | `motd.txt` | *(unset; keep existing file)* |
@@ -189,6 +189,7 @@ are treated as unlimited rather than being filtered out.
 | Variable | Meaning | Default |
 | --- | --- | --- |
 | `WEBEYE_PORT` | Published port | `8080` |
+| `WEBEYE_TITLE` | Map header and browser tab title | `WebEye` |
 | `WEBEYE_POLL` | Seconds between file reads | `5` |
 | `WEBEYE_HISTORY_POINTS` | Trail length per aircraft | `60` |
 | `WEBEYE_HISTORY_TTL` | Seconds a disconnected trail is kept | `600` |
