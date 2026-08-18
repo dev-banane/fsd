@@ -89,6 +89,9 @@ cluser::~cluser()
    if (thisclient)
    {
       int type=thisclient->type;
+      dolog(L_INFO,"%s %s disconnected after %lu seconds",
+         type==CLIENT_ATC?"ATC":"pilot", thisclient->callsign,
+         (unsigned long)(mtime()-thisclient->starttime));
       serverinterface->sendrmclient(NULL,"*",thisclient, this);
       delete thisclient;
    }

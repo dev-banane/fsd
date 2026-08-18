@@ -28,6 +28,8 @@ func emptyStatus() *Status {
 	}
 }
 
+const staleAfter = 90 * time.Second
+
 type Cache struct {
 	path          string
 	historyPoints int
@@ -73,6 +75,9 @@ func (c *Cache) Refresh() error {
 		return err
 	}
 	if info.ModTime().Equal(c.modTime) {
+		if time.Since(info.ModTime()) > staleAfter {
+			c.markStale()
+		}
 		return nil
 	}
 	c.modTime = info.ModTime()

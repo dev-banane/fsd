@@ -22,6 +22,23 @@
 #include "support.h"
 #include "user.h"
 
+/* Turn on TCP keepalives for an accepted connection. The tuning is
+{
+   int on=1;
+   if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (const char *)&on,
+      sizeof(on))<0)
+   {
+      dolog(L_ERR,"Could not set SO_KEEPALIVE");
+      return;
+   }
+#if defined(TCP_KEEPIDLE)&&defined(TCP_KEEPINTVL)&&defined(TCP_KEEPCNT)
+   int idle=60, intvl=10, cnt=3;
+   setsockopt(fd, IPPROTO_TCP, TCP_KEEPIDLE, (const char *)&idle, sizeof(idle));
+   setsockopt(fd, IPPROTO_TCP, TCP_KEEPINTVL, (const char *)&intvl, sizeof(intvl));
+   setsockopt(fd, IPPROTO_TCP, TCP_KEEPCNT, (const char *)&cnt, sizeof(cnt));
+#endif
+}
+
 const char *killreasons[]=
 {
    "",
@@ -184,11 +201,12 @@ void tcpinterface::newuser(void)
    }
    dolog(L_INFO,"Connection accepted from %s on %s", buf, description);
    int off=1;
-   if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (const char *)&off,
+   if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const char *)&off,
       sizeof(off))<0)
    {
       dolog(L_ERR,"Could not set off TCP_NODELAY");
    }
+   setkeepalive(fd);
 #ifdef WIN32
    unsigned long io=1;
    ioctlsocket(sock,FIONBIO,&io);
