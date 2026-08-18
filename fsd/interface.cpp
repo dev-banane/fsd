@@ -22,7 +22,7 @@
 #include "support.h"
 #include "user.h"
 
-/* Turn on TCP keepalives for an accepted connection. The tuning is
+static void setkeepalive(int fd)
 {
    int on=1;
    if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (const char *)&on,
