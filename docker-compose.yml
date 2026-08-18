@@ -17,6 +17,8 @@ services:
       FSD_CERTS: ${FSD_CERTS:-}
       FSD_MOTD: ${FSD_MOTD:-}
       FSD_WEATHER_SOURCE: ${FSD_WEATHER_SOURCE:-file}
+      FSD_METAR_URL: ${FSD_METAR_URL:-https://metar.vatsim.net/all}
+      FSD_METAR_INTERVAL: ${FSD_METAR_INTERVAL:-600}
       FSD_WHAZZUP_INTERVAL: ${FSD_WHAZZUP_INTERVAL:-5}
     ports:
       - "6809:6809/tcp"

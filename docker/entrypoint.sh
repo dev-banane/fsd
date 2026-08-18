@@ -100,8 +100,47 @@ set_conf() {
 [ -n "${FSD_PASSWORD:-}" ] && set_conf password "$FSD_PASSWORD" "$CONFIG"
 [ -n "${FSD_LOCATION:-}" ] && set_conf location "$FSD_LOCATION" "$CONFIG"
 [ -n "${FSD_MAXCLIENTS:-}" ] && set_conf maxclients "$FSD_MAXCLIENTS" "$CONFIG"
-[ -n "${FSD_WEATHER_SOURCE:-}" ] && set_conf source "$FSD_WEATHER_SOURCE" "$CONFIG" "[weather]"
 [ -n "${FSD_WHAZZUP_INTERVAL:-}" ] && set_conf whazzupinterval "$FSD_WHAZZUP_INTERVAL" "$CONFIG"
+
+METAR_URL="${FSD_METAR_URL:-https://metar.vatsim.net/all}"
+METAR_INTERVAL="${FSD_METAR_INTERVAL:-600}"
+METAR_FILE="${DATA_DIR}/metar.txt"
+fetch_metar=0
+
+case "${FSD_WEATHER_SOURCE:-}" in
+  download)
+    fetch_metar=1
+    set_conf source file "$CONFIG" "[weather]"
+    ;;
+  ftp)
+    set_conf source download "$CONFIG" "[weather]"
+    ;;
+  ?*)
+    set_conf source "$FSD_WEATHER_SOURCE" "$CONFIG" "[weather]"
+    ;;
+esac
+
+fetch_metar_once() {
+  tmp="${METAR_FILE}.tmp"
+  if curl -fsS --max-time 60 "$METAR_URL" -o "$tmp" && [ -s "$tmp" ]; then
+    mv "$tmp" "$METAR_FILE"
+    chown fsd:fsd "$METAR_FILE"
+    return 0
+  fi
+  rm -f "$tmp"
+  return 1
+}
+
+if [ "$fetch_metar" = 1 ]; then
+  echo "METAR: fetching $METAR_URL every ${METAR_INTERVAL}s" >&2
+  fetch_metar_once || echo "METAR: initial fetch from $METAR_URL failed" >&2
+  (
+    while :; do
+      sleep "$METAR_INTERVAL"
+      fetch_metar_once || echo "METAR: fetch from $METAR_URL failed" >&2
+    done
+  ) &
+fi
 
 chown -R fsd:fsd "$DATA_DIR"
 

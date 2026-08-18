@@ -182,13 +182,8 @@ void cluser::execaa(char **s, int count)
       return;
    }
    if (atoi(s[6])!=NEEDREVISION)
-   {
-      dolog(L_INFO,"ATC login %s from %s rejected: protocol revision %s "
-         "(need %d)", s[0], peer, s[6], NEEDREVISION);
-      showerror(ERR_REVISION, "");
-      kill(KILL_PROTOCOL);
-      return;
-   }
+      dolog(L_INFO,"ATC login %s from %s uses protocol revision %s "
+         "(server revision %d)", s[0], peer, s[6], NEEDREVISION);
    int req=atoi(s[5]);
    if (req<0) req=0;
    int level=checklogin(s[3], s[4], req);
