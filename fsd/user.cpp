@@ -74,22 +74,34 @@ void absuser::input()
 	   }
    if (bytes==0)
    {
+      tracelog("RECV fd=%d peer=%s: connection closed by peer (read returned 0)",
+         fd, peer);
       kill(KILL_CLOSED);
       return;
    }
    if (bytes<0)
 	   if (WSAGetLastError()!=WSAEWOULDBLOCK)
 	   {
+	      tracelog("RECV fd=%d peer=%s: read error wsaerr=%d", fd, peer,
+	         WSAGetLastError());
 	      kill(KILL_CLOSED);
 		  return;
 	   }
 #else
 	if ((bytes<0&&errno!=EINTR)||bytes==0)
 	{
+	  tracelog("RECV fd=%d peer=%s: %s", fd, peer,
+	     bytes==0?"connection closed by peer (read returned 0)":strerror(errno));
 	  kill(KILL_CLOSED);
 	  return;
 	}
 #endif
+   if (traceenabled)
+   {
+      char pfx[128];
+      snprintf(pfx,sizeof(pfx),"RECV fd=%d peer=%s",fd,peer);
+      tracelograw(pfx, buf, bytes);
+   }
    if (baseparent->feedstrategy&FEED_IN) feedcount+=bytes;
    buf[bytes]='\0';
    int inbufbytes = strlen(inbuf);
@@ -139,8 +151,16 @@ void absuser::output()
    if (((bytes=::WRITESOCK(fd,outbuf,bytes))<0)&&errno!=EINTR)
 #endif
    {
+      tracelog("SEND fd=%d peer=%s: write error errno=%d (%s)", fd, peer,
+         errno, strerror(errno));
       kill(KILL_WRITEERR);
       return;
+   }
+   if (traceenabled)
+   {
+      char pfx[128];
+      snprintf(pfx,sizeof(pfx),"SEND fd=%d peer=%s",fd,peer);
+      tracelograw(pfx, outbuf, bytes);
    }
    if (baseparent->feedstrategy&FEED_OUT) feedcount+=bytes;
    memmove(outbuf,&outbuf[bytes],len-bytes);
@@ -199,8 +219,16 @@ int absuser::send(char *buf)
 	   if (((sendbytes=::WRITESOCK(fd,buf,sendbytes))<0)&&errno!=EINTR)
 #endif
 	   {
+		  tracelog("SENDDIRECT fd=%d peer=%s: write error errno=%d (%s)",
+		     fd, peer, errno, strerror(errno));
 		  kill(KILL_WRITEERR);
 		  return 0;
+	   }
+	   if (traceenabled)
+	   {
+	      char pfx[128];
+	      snprintf(pfx,sizeof(pfx),"SENDDIRECT fd=%d peer=%s",fd,peer);
+	      tracelograw(pfx, buf, sendbytes);
 	   }
 	   if (baseparent->feedstrategy&FEED_OUT) feedcount+=sendbytes;
 	   if (bytes-sendbytes+1>outsize)
@@ -280,6 +308,7 @@ void absuser::printprompt()
 }
 void absuser::kill(int reason)
 {
+   if (!killflag) tracelog("KILL fd=%d peer=%s reason=%d", fd, peer, reason);
    killflag=reason;
 }
 void absuser::sendping()

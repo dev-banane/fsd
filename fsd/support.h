@@ -35,6 +35,11 @@ int finditem(char *what, char *buf);
 char *configgets(char *s, int size);
 void dolog(int level, const char *, ...);
 void addfile(char *, char *, ...);
+
+extern int traceenabled;
+void inittracelog();
+void tracelog(const char *, ...);
+void tracelograw(const char *prefix, const char *data, int len);
 int breakpacket(char *, char **, int);
 int breakargs(char *, char **, int);
 char *catargs(char **, int, char *);

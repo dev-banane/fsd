@@ -196,10 +196,14 @@ void tcpinterface::newuser(void)
       char *message="#You are not allowed on this port.\r\n";
 	  WRITESOCK(fd,message,strlen(message));
       dolog(L_INFO,"Connection rejected from %s",buf);
+      tracelog("REJECT fd=%d peer=%s port=%d iface=%s (not in allowfrom)",
+         fd, buf, ntohs(saddr.sin_port), description);
       CLOSESOCKET(fd);
       return;
    }
    dolog(L_INFO,"Connection accepted from %s on %s", buf, description);
+   tracelog("ACCEPT fd=%d peer=%s port=%d iface=%s", fd, buf,
+      ntohs(saddr.sin_port), description);
    int off=1;
    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const char *)&off,
       sizeof(off))<0)
@@ -232,10 +236,14 @@ void tcpinterface::insertuser(absuser *u)
    int peak=manager->getvar(varpeak)->value.number;
    int now=manager->getvar(varcurrent)->value.number;
    if (now>peak) manager->setvar(varpeak, now);
-   
+   tracelog("INSERTUSER fd=%d peer=%s iface=%s current=%d total=%d peak=%d",
+      u->fd, u->peer, description, now,
+      manager->getvar(vartotal)->value.number, peak>now?peak:now);
 }
 void tcpinterface::removeuser(absuser *u)
 {
+   tracelog("REMOVEUSER fd=%d peer=%s iface=%s reason=%s", u->fd, u->peer,
+      description, killreasons[u->killflag]);
    if (u->next) u->next->prev=u->prev;
    if (u->prev) u->prev->next=u->next; else rootuser=u->next;
    if (varcurrent!=-1)
@@ -270,7 +278,11 @@ void tcpinterface::dochecks()
    for (temp=rootuser;temp;temp=temp->next) if (!temp->killflag)
    { 
       if (temp->timeout)
+      {
+         tracelog("TIMEOUT KILL fd=%d peer=%s idle=%llds", temp->fd,
+            temp->peer, (unsigned long long)(now-temp->lastactive));
          temp->kill(KILL_DATATIMEOUT);
+      }
       if (feedstrategy&(now-temp->prevfeedcheck>=USERFEEDCHECK))
          temp->calcfeed();
       if (now-temp->lastping>=USERPINGTIMEOUT)
@@ -279,6 +291,8 @@ void tcpinterface::dochecks()
          temp->lastping=now;
       } else if (now-temp->lastactive>=USERTIMEOUT)
       {
+         tracelog("TIMEOUT WARNING fd=%d peer=%s idle=%llds", temp->fd,
+            temp->peer, (unsigned long long)(now-temp->lastactive));
          temp->uprintf("# Timeout\r\n");
          temp->timeout=1;
       }

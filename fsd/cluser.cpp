@@ -184,6 +184,8 @@ void cluser::execaa(char **s, int count)
       kill(KILL_COMMAND);
       return;
    }
+   tracelog("ATC LOGIN ATTEMPT fd=%d peer=%s cs=%s cid=%s rev=%s reqlevel=%s",
+      fd, peer, s[0], s[3], s[6], s[5]);
    if (atoi(s[6])!=NEEDREVISION)
       dolog(L_INFO,"ATC login %s from %s uses protocol revision %s "
          "(server revision %d)", s[0], peer, s[6], NEEDREVISION);
@@ -210,6 +212,7 @@ void cluser::execaa(char **s, int count)
    }
    thisclient=new client(s[3], myserver, s[0], CLIENT_ATC, level, s[6], s[2],
       -1);
+   tracelog("ATC LOGIN OK fd=%d peer=%s cs=%s level=%d", fd, peer, s[0], level);
    serverinterface->sendaddclient("*",thisclient, NULL, this, 0);
    readmotd();
 }
@@ -232,6 +235,8 @@ void cluser::execap(char **s, int count)
       kill(KILL_COMMAND);
       return;
    }
+   tracelog("PILOT LOGIN ATTEMPT fd=%d peer=%s cs=%s cid=%s rev=%s reqlevel=%s",
+      fd, peer, s[0], s[2], s[5], s[4]);
    if (atoi(s[5])!=NEEDREVISION)
    {
       dolog(L_INFO,"pilot login %s from %s rejected: protocol revision %s "
@@ -262,6 +267,7 @@ void cluser::execap(char **s, int count)
    }
    thisclient=new client(s[2], myserver, s[0], CLIENT_PILOT, level, s[4], s[7],
       atoi(s[6]));
+   tracelog("PILOT LOGIN OK fd=%d peer=%s cs=%s level=%d", fd, peer, s[0], level);
    serverinterface->sendaddclient("*",thisclient, NULL, this, 0);
    readmotd();
    sendvisupdates();
@@ -447,6 +453,13 @@ void cluser::execkill(char ** array, int count)
 void cluser::doparse(char *s)
 {
    char cmd[4], *array[100];
+   if (traceenabled)
+   {
+      char pfx[128];
+      snprintf(pfx,sizeof(pfx),"CMD fd=%d peer=%s cs=%s", fd, peer,
+         thisclient?thisclient->callsign:"(none)");
+      tracelograw(pfx, s, strlen(s));
+   }
    snappacket(s, cmd, 3);
    int index=getcomm(cmd), count;
    if (index==-1)

@@ -20,11 +20,60 @@
 #include "support.h"
 #include "global.h"
 #include "server.h"
+#include "fsdpaths.h"
 
 int logp=0;
 time_t timer=100000;
 loghis loghistory[MAXLOG];
 int mrandseed=0;
+
+int traceenabled=0;
+void inittracelog()
+{
+   char *e=getenv("FSD_TRACE_LOG");
+   traceenabled=(e&&(!STRCASECMP(e,"1")||
+      !STRCASECMP(e,"true")||!STRCASECMP(e,"yes")));
+}
+void tracelog(const char *string, ...)
+{
+   if (!traceenabled) return;
+   char buf[2000], buf2[2200];
+   time_t secs=time(NULL);
+   struct tm *loctime;
+   va_list ap;
+
+   loctime = localtime(&secs);
+   va_start(ap,string);
+   vsnprintf(buf,sizeof(buf),string,ap);
+   va_end(ap);
+
+   snprintf(buf2,sizeof(buf2),"%02d-%02d-%02d %02d:%02d:%02d %s",
+      loctime->tm_mday, loctime->tm_mon+1, loctime->tm_year,
+      loctime->tm_hour,loctime->tm_min,loctime->tm_sec, buf);
+   FILE *logfile=fopen(TRACELOGFILE,"a");
+   if (logfile)
+   {
+      fprintf(logfile,"%s\n", buf2);
+      fclose(logfile);
+   }
+}
+   interpreted as a format specifier. */
+void tracelograw(const char *prefix, const char *data, int len)
+{
+   if (!traceenabled) return;
+   char buf[900];
+   int n=len<0?0:len;
+   if (n>(int)sizeof(buf)-1) n=(int)sizeof(buf)-1;
+   int i;
+   for (i=0;i<n;i++)
+   {
+      unsigned char c=(unsigned char)data[i];
+      buf[i]=(c>=32&&c<127)?(char)c:'.';
+   }
+   buf[n]='\0';
+   tracelog("%s (%d bytes%s): %s", prefix, len,
+      len>n?", truncated":"", buf);
+}
 
 void addlog(int level, char *s)
 {

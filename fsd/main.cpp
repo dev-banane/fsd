@@ -53,6 +53,9 @@ void dosignals()
 		int rc = WSAStartup(Version, &lpwsaData);
    
 		dosignals();
+		inittracelog();
+		dolog(L_INFO, "Trace logging is %s (set FSD_TRACE_LOG=true to enable)",
+			traceenabled?"ENABLED, writing to trace.log":"disabled");
 		run(configfile);
 		return 0;
 	}
@@ -264,6 +267,9 @@ void dosignals()
 	   }
    
 	   dosignals();
+	   inittracelog();
+	   dolog(L_INFO, "Trace logging is %s (set FSD_TRACE_LOG=true to enable)",
+	      traceenabled?"ENABLED, writing to trace.log":"disabled");
 	   run(configfile);
 	}
 #endif

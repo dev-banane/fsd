@@ -8,6 +8,7 @@
 #define PATH_FSD_HELP "help.txt"
 #define PATH_FSD_MOTD "motd.txt"
 #define LOGFILE  "log.txt"
+#define TRACELOGFILE  "trace.log"
 #define METARFILE "metar.txt"
 #define METARFILENEW  "metarnew.txt"
 
