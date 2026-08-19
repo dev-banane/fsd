@@ -57,7 +57,6 @@ void tracelog(const char *string, ...)
       fclose(logfile);
    }
 }
-   interpreted as a format specifier. */
 void tracelograw(const char *prefix, const char *data, int len)
 {
    if (!traceenabled) return;
